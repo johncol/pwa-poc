@@ -11,6 +11,7 @@ let cacheStaticResources = function (cache) {
   cache.addAll([
     '/',
     '/index.html',
+    '/offline.html',
     '/favicon.ico',
     '/src/js/app.js',
     '/src/js/feed.js',
@@ -43,14 +44,16 @@ self.addEventListener('fetch', event => {
     .then(cachedResponse => {
         console.log('Fetch:', event.request.method + ' ' + event.request.url);
         console.log('  cached response is:', cachedResponse);
-        return cachedResponse ? cachedResponse : fetch(event.request).then(response => {
-          return caches.open(CacheType.DYNAMIC_CONTENT).then(cache => {
-            let url = event.request.url;
-            if (!nonCacheableRequestProtocols.find(protocol => url.startsWith(protocol))) {
-              cache.put(url, response.clone());
-            }
-            return response;
-          });
-        });
+        return cachedResponse ? cachedResponse : fetch(event.request)
+          .then(response => {
+            return caches.open(CacheType.DYNAMIC_CONTENT).then(cache => {
+              let url = event.request.url;
+              if (!nonCacheableRequestProtocols.find(protocol => url.startsWith(protocol))) {
+                cache.put(url, response.clone());
+              }
+              return response;
+            });
+          })
+          .catch(error => caches.open(CacheType.STATIC_CONTENT).then(cache => cache.match('/offline.html')));
       }));
 });
