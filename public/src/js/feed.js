@@ -35,7 +35,7 @@ function onSaveButtonClicked(event) {
   console.log('clicked');
 }
 
-function createCard() {
+function createCard(uuid) {
   var cardWrapper = document.createElement('div');
   cardWrapper.className = 'shared-moment-card mdl-card mdl-shadow--2dp';
   var cardTitle = document.createElement('div');
@@ -51,7 +51,7 @@ function createCard() {
   cardTitle.appendChild(cardTitleTextElement);
   var cardSupportingText = document.createElement('div');
   cardSupportingText.className = 'mdl-card__supporting-text';
-  cardSupportingText.textContent = 'In San Francisco';
+  cardSupportingText.textContent = 'In San Francisco (' + uuid + ')';
   cardSupportingText.style.textAlign = 'center';
   var cardSaveButton = document.createElement('button');
   cardSaveButton.textContent = 'Save';
@@ -62,6 +62,20 @@ function createCard() {
   sharedMomentsArea.appendChild(cardWrapper);
 }
 
-fetch('https://httpbin.org/get')
+let uuidUrl = 'https://httpbin.org/uuid';
+
+caches.match(uuidUrl)
+  .then(response => response ? response.json() : undefined)
+  .then(data => {
+    console.log('data from cache: ', data);
+    if (data) {
+      createCard(data.uuid);
+    }
+  });
+
+fetch(uuidUrl)
   .then(res => res.json())
-  .then(data => createCard());
+  .then(data => {
+    console.log('data from internet: ', data);
+    createCard(data.uuid);
+  });
