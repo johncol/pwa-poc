@@ -16,14 +16,14 @@ let openPwaPrompt = function (installPwa) {
 };
 
 let openCreatePostModal = function () {
-  createPostArea.style.display = 'block';
+  createPostArea.style.transform = 'translateY(0)';
   if (deferredPwaPrompt) {
     openPwaPrompt(deferredPwaPrompt);
     deferredPwaPrompt = null;
   }
 };
 
-let closeCreatePostModal = () => createPostArea.style.display = 'none';
+let closeCreatePostModal = () => createPostArea.style.transform = 'translateY(100vh)';
 
 let onSaveButtonClicked = event => console.log('clicked');
 
