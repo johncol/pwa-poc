@@ -23,35 +23,36 @@ let openCreatePostModal = function () {
   }
 };
 
-let closeCreatePostModal = function () {
-  createPostArea.style.display = 'none';
-};
+let closeCreatePostModal = () => createPostArea.style.display = 'none';
+
+let onSaveButtonClicked = event => console.log('clicked');
 
 shareImageButton.addEventListener('click', openCreatePostModal);
-
 closeCreatePostModalButton.addEventListener('click', closeCreatePostModal);
 
-function onSaveButtonClicked(event) {
-  console.log('clicked');
-}
+let clearCards = () => {
+  while(sharedMomentsArea.hasChildNodes()) {
+    sharedMomentsArea.removeChild(sharedMomentsArea.lastChild);
+  }
+};
 
-function createCard(uuid) {
+let createCard = post => {
   var cardWrapper = document.createElement('div');
   cardWrapper.className = 'shared-moment-card mdl-card mdl-shadow--2dp';
   var cardTitle = document.createElement('div');
   cardTitle.className = 'mdl-card__title';
-  cardTitle.style.backgroundImage = 'url("/src/images/sf-boat.jpg")';
+  cardTitle.style.backgroundImage = 'url("' + post.image + '")';
   cardTitle.style.backgroundSize = 'cover';
   cardTitle.style.height = '180px';
   cardWrapper.appendChild(cardTitle);
   var cardTitleTextElement = document.createElement('h2');
   cardTitleTextElement.style.color = 'white';
   cardTitleTextElement.className = 'mdl-card__title-text';
-  cardTitleTextElement.textContent = 'San Francisco Trip';
+  cardTitleTextElement.textContent = post.title;
   cardTitle.appendChild(cardTitleTextElement);
   var cardSupportingText = document.createElement('div');
   cardSupportingText.className = 'mdl-card__supporting-text';
-  cardSupportingText.textContent = 'In San Francisco (' + uuid + ')';
+  cardSupportingText.textContent = post.location;
   cardSupportingText.style.textAlign = 'center';
   var cardSaveButton = document.createElement('button');
   cardSaveButton.textContent = 'Save';
@@ -60,22 +61,38 @@ function createCard(uuid) {
   cardWrapper.appendChild(cardSupportingText);
   componentHandler.upgradeElement(cardWrapper);
   sharedMomentsArea.appendChild(cardWrapper);
-}
+};
 
-let uuidUrl = 'https://httpbin.org/uuid';
+let addCardsFromResponse = cards => {
+  clearCards();
+  for (let cardKey in cards) {
+    createCard(cards[cardKey]);
+  }
+};
 
-caches.match(uuidUrl)
-  .then(response => response ? response.json() : undefined)
-  .then(data => {
-    console.log('data from cache: ', data);
-    if (data) {
-      createCard(data.uuid);
-    }
-  });
+let postsUrl = 'https://for-pwa-sample.firebaseio.com/posts.json';
+let networkDataReceived = false;
 
-fetch(uuidUrl)
+fetch(postsUrl)
   .then(res => res.json())
   .then(data => {
+    networkDataReceived = true;
     console.log('data from internet: ', data);
-    createCard(data.uuid);
+    addCardsFromResponse(data);
   });
+
+getDataFromIndexedDB(DBStore.POSTS).then(data => {
+  if (!networkDataReceived && data) {
+    addCardsFromResponse(data);
+  }
+});
+
+// NOT DONE ANYMORE AS THIS DATA IS NOW TAKEN FROM INDEXED-DB
+// caches.match(postsUrl)
+//   .then(response => response ? response.json() : undefined)
+//   .then(data => {
+//     console.log('data from cache: ', data);
+//     if (!networkDataReceived && data) {
+//       addCardsFromResponse(data);
+//     }
+//   });

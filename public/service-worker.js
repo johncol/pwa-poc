@@ -1,9 +1,11 @@
 
+importScripts('/src/js/libs/idb.js');
+importScripts('/src/js/indexed-db.js');
+
 const CacheType = {
   STATIC_CONTENT: 'v1-static-content',
   DYNAMIC_CONTENT: 'v1-dynamic-content',
 };
-
 const nonCacheableRequestProtocols = ['chrome-extension'];
 
 const staticResources = [
@@ -11,6 +13,7 @@ const staticResources = [
   '/index.html',
   '/offline.html',
   '/favicon.ico',
+  '/src/js/libs/idb.js',
   '/src/js/app.js',
   '/src/js/feed.js',
   '/src/js/material.min.js',
@@ -23,7 +26,7 @@ const staticResources = [
 ];
 
 const networkThenCacheResources = [
-  'https://httpbin.org/uuid'
+  'https://for-pwa-sample.firebaseio.com/posts.json'
 ];
 
 let cacheStaticResources = function (cache) {
@@ -74,11 +77,26 @@ let networkThenCache = event => caches.open(CacheType.DYNAMIC_CONTENT).then(cach
 
 let cacheOnlyStrategy = event => caches.match(event.request);
 
+let networkThenIndexedDB = event => {
+  return fetch(event.request).then(response => {
+    clearAllDataFromIndexedDB(DBStore.POSTS).then(() => {
+      response.json().then(data => {
+        for (let key in data) {
+          saveDataToIndexedDB(DBStore.POSTS, data[key]);
+        }
+      });
+    });
+    return response.clone();
+  }).catch(error => {
+    return cache.match(event.request);
+  });
+};
+
 self.addEventListener('fetch', event => {
   console.log('Fetch:', event.request.method + ' ' + event.request.url);
   if (networkThenCacheResources.find(url => event.request.url === url)) {
-    console.log('  network then cache strategy');
-    event.respondWith(networkThenCache(event));
+    console.log('  network then indexedDB strategy');
+    event.respondWith(networkThenIndexedDB(event));
   } else if (staticResources.indexOf((event.request.url.indexOf(self.origin) === 0 ? event.request.url.substring(self.origin.length) : event.request.url)) > -1) {
     console.log('  cache only strategy');
     event.respondWith(cacheOnlyStrategy(event));
