@@ -1,6 +1,7 @@
 
 importScripts('/src/js/libs/idb.js');
 importScripts('/src/js/indexed-db.js');
+importScripts('/src/js/background-sync.js');
 
 const CacheType = {
   STATIC_CONTENT: 'v1-static-content',
@@ -71,7 +72,7 @@ let networkThenCache = event => caches.open(CacheType.DYNAMIC_CONTENT).then(cach
     cache.add(event.request, response.clone());
     return response;
   }).catch(error => {
-    return cache.match(event.request);
+    return caches.match(event.request);
   });
 });
 
@@ -88,7 +89,7 @@ let networkThenIndexedDB = event => {
     });
     return response.clone();
   }).catch(error => {
-    return cache.match(event.request);
+    return caches.match(event.request);
   });
 };
 
@@ -103,5 +104,31 @@ self.addEventListener('fetch', event => {
   } else {
     console.log('  cache then network strategy');
     event.respondWith(cacheWithNetworkFallback(event));
+  }
+});
+
+let newPostUrl = 'https://us-central1-for-pwa-sample.cloudfunctions.net/newPost';
+
+self.addEventListener('sync', event => {
+  console.log('Background sync event triggered - tag:', event.tag);
+  switch (event.tag) {
+    case SyncTask.NEW_POSTS:
+      event.waitUntil(getDataFromIndexedDB(DBStore.SYNC_POSTS).then(postsToSync => {
+        postsToSync.forEach(post => {
+          fetch(newPostUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify(post)
+          }).then(response => {
+            if (response.ok) {
+              response.json() 
+                .then(responseBody => deleteDataFromIndexedDB(DBStore.SYNC_POSTS, responseBody.id));
+            }
+          });
+        });
+      }));
   }
 });
