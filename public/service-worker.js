@@ -2,6 +2,7 @@
 importScripts('/src/js/libs/idb.js');
 importScripts('/src/js/indexed-db.js');
 importScripts('/src/js/background-sync.js');
+importScripts('/src/js/notification.js');
 
 const CacheType = {
   STATIC_CONTENT: 'v1-static-content',
@@ -132,3 +133,38 @@ self.addEventListener('sync', event => {
       }));
   }
 });
+
+self.addEventListener('notificationclick', event => {
+  const notification = event.notification;
+  console.log('notification: ', notification);
+  console.log('action: ', event.action);
+
+  switch (event.action) {
+    case NotificationAction.CONFIRM:
+      console.log('Notification confirmed!! :)');
+      break;
+    case NotificationAction.CANCEL:
+      console.log('Notification canceled..  :(');
+      break;
+  }
+
+  notification.close();
+});
+
+self.addEventListener('notificationclose', event => {
+  console.log('notification closed: ', event);
+});
+
+self.addEventListener('push', event => {
+  console.log('push notification event: ', event);
+  if (event.data) {
+    let data = JSON.parse(event.data.text());
+    let options = {
+      body: data.content,
+      icon: '/src/images/icons/apple-icon-76x76.png',
+      badge: '/src/images/icons/apple-icon-76x76.png'
+    };
+    event.waitUntil(self.registration.showNotification(data.title, options));
+  }
+});
+
