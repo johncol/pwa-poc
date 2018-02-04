@@ -5,8 +5,8 @@ if (!window.fetch) { window.fetch = fetch; }
 
 if ('serviceWorker' in navigator) {
   /** Register sample service-worker.js */
-  navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
-    .then(() => console.log('Service worker registered'));
+  navigator.serviceWorker.register('/workbox-service-worker.js', { scope: '/' })
+    .then(() => console.log('Workbox service worker registered'));
   
   /** Unregister service workers on click */
   document.querySelectorAll('.delete-service-worker')

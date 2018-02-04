@@ -74,7 +74,9 @@ let closeCreatePostModal = () => {
   player.style.display = 'none';
   captureBtn.style.display = 'none';
   pickImageArea.style.display = 'none';
-  player.srcObject.getVideoTracks().forEach(track => track.stop());
+  if (player.srcObject) {
+    player.srcObject.getVideoTracks().forEach(track => track.stop());
+  }
 };
 
 let onSaveButtonClicked = event => console.log('clicked');
