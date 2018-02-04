@@ -7,6 +7,46 @@ let titleInput = document.querySelector('#title');
 let locationInput = document.querySelector('#location');
 let snackbarContainer = document.querySelector('#confirmation-toast');
 
+let player = document.querySelector('#player');
+let canvas = document.querySelector('#canvas');
+let captureBtn = document.querySelector('#capture-btn');
+let pickImageArea = document.querySelector('#pick-image');
+let imagePicker = document.querySelector('#image-picker');
+
+let prepareNavigatorMediaFallback = () => {
+  if (!('mediaDevices' in navigator)) {
+    navigator.mediaDevices = {};
+  }
+  if (!('getUserMedia' in navigator.mediaDevices)) {
+    navigator.mediaDevices.getUserMedia = constraints => {
+      let userMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+  
+      if (!userMedia) {
+        return Promise.reject(new Error('UserMedia could not be provided'));
+      }
+  
+      return new Promise((resolve, reject) => {
+        getUserMedia(navigator, constraints, resolve, reject);
+      });
+    };
+  }
+};
+
+let initializeMedia = () => {
+  prepareNavigatorMediaFallback();
+
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+      player.srcObject = stream;
+      player.style.display = 'block';
+      captureBtn.style.display = 'block';
+    })
+    .catch(error => {
+      console.warn('error: ', error);
+      pickImageArea.style.display = 'block';
+    });
+};
+
 let openPwaPrompt = function (installPwa) {
   installPwa.prompt();
   installPwa.userChoice.then(result => {
@@ -21,13 +61,21 @@ let openPwaPrompt = function (installPwa) {
 
 let openCreatePostModal = function () {
   createPostArea.style.transform = 'translateY(0)';
+  initializeMedia();
   if (deferredPwaPrompt) {
     openPwaPrompt(deferredPwaPrompt);
     deferredPwaPrompt = null;
   }
 };
 
-let closeCreatePostModal = () => createPostArea.style.transform = 'translateY(100vh)';
+let closeCreatePostModal = () => {
+  createPostArea.style.transform = 'translateY(100vh)';
+  canvas.style.display = 'none';
+  player.style.display = 'none';
+  captureBtn.style.display = 'none';
+  pickImageArea.style.display = 'none';
+  player.srcObject.getVideoTracks().forEach(track => track.stop());
+};
 
 let onSaveButtonClicked = event => console.log('clicked');
 
@@ -145,3 +193,12 @@ fetchPosts();
 //       addCardsFromResponse(data);
 //     }
 //   });
+
+captureBtn.addEventListener('click', event => {
+  canvas.style.display = 'block';
+  player.style.display = 'none';
+  captureBtn.style.display = 'none';
+  let context = canvas.getContext('2d');
+  context.drawImage(player, 0, 0, canvas.width, player.videoHeight / (player.videoWidth / canvas.width));
+  player.srcObject.getVideoTracks().forEach(track => track.stop());
+});
